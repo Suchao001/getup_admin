@@ -17,7 +17,18 @@ const getUsers = async (req, res) => {
     res.status(500).json({ ok: false, message: 'Internal server error' });
   }
 };
+const countUsers = async (req, res) => {
+  try {
+    const count = await knex('users').count('user_id').first();
+    res.json({ ok: true, count: count['count(`user_id`)'] });
+    console.log(count);
+  } catch (error) {
+    console.error('Error counting users:', error);
+    res.status(500).json({ ok: false, message: 'Internal server error' });
+  }
+};
 
 router.get('/', authenticateToken, getUsers);
+router.get('/count', authenticateToken, countUsers);
 
 export default router;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { HostName } from '../client/util/HostName';
+import { HostName } from '../util/HostName';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Avatar, Typography } from '@mui/material';
 
 function User() {
@@ -12,7 +12,9 @@ function User() {
         const response = await axios.get(`${HostName}/api/admin/user`, { withCredentials: true });
         if (response.data.ok) {
           setUsers(response.data.users);
+          
         }
+ 
       } catch (error) {
         console.error('Error fetching users:', error);
       }

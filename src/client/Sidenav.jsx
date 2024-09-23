@@ -1,14 +1,41 @@
 import React, { useState } from 'react';
 import { Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, Box, IconButton } from '@mui/material';
-import { Home, Settings, Person, People, Menu } from '@mui/icons-material';
+import { Home, Settings, Person, People, Menu, CheckCircle, CalendarToday, Image } from '@mui/icons-material';
+
+
 import { Link } from 'react-router-dom';
 
-function Sidenav({pageName, children}) {
+function Sidenav({ pageName, children}) {
   const [open, setOpen] = useState(true);
+  
+  const menuItems = [
+    { to: '/', icon: <Home />, text: 'Home' },
+    { to: '/user', icon: <People />, text: 'User' },
+    { to: '/manageIcon', icon: <CalendarToday />, text: 'Icon' },
+    { to: '/manageHabit', icon: <CheckCircle />, text: 'Habit for Recommend' },
+  ];
+  
 
   const toggleDrawer = () => {
     setOpen(!open);
   };
+
+  const ListItemLink = ({ to, icon, text, selected }) => (
+    <ListItem 
+      button 
+      component={Link} 
+      to={to}
+      sx={{
+        backgroundColor: selected ? '#f0f0f0' : 'transparent',
+        '&:hover': {
+          backgroundColor: '#e0e0e0',
+        },
+      }}
+    >
+      <ListItemIcon>{icon}</ListItemIcon>
+      <ListItemText primary={text} />
+    </ListItem>
+  );
 
   return (
     <>
@@ -50,54 +77,15 @@ function Sidenav({pageName, children}) {
           </IconButton>
         </Box>
         <List>
-          <ListItem 
-            button 
-            component={Link} 
-            to="/home"
-            sx={{
-              backgroundColor: pageName?.toLowerCase() === 'home' ? '#f0f0f0' : 'transparent',
-              '&:hover': {
-                backgroundColor: '#e0e0e0',
-              },
-            }}
-          >
-            <ListItemIcon>
-              <Home />
-            </ListItemIcon>
-            {open && <ListItemText primary="Home" />}
-          </ListItem>
-          <ListItem 
-            button 
-            component={Link} 
-            to="/user"
-            sx={{
-              backgroundColor: pageName?.toLowerCase() === 'user' ? '#f0f0f0' : 'transparent',
-              '&:hover': {
-                backgroundColor: '#e0e0e0',
-              },
-            }}
-          >
-            <ListItemIcon>
-              <People />
-            </ListItemIcon>
-            {open && <ListItemText primary="User" />}
-          </ListItem>
-          <ListItem 
-            button 
-            component={Link} 
-            to="/profile"
-            sx={{
-              backgroundColor: pageName?.toLowerCase() === 'profile' ? '#f0f0f0' : 'transparent',
-              '&:hover': {
-                backgroundColor: '#e0e0e0',
-              },
-            }}
-          >
-            <ListItemIcon>
-              <Person />
-            </ListItemIcon>
-            {open && <ListItemText primary="Profile" />}
-          </ListItem>
+          {menuItems.map((menuItem) => (
+            <ListItemLink 
+              key={menuItem.to}
+              to={menuItem.to}
+              icon={menuItem.icon}
+              text={menuItem.text}
+              selected={pageName?.toLowerCase() === menuItem.to.split('/').pop()}
+            />
+          ))}
         </List>
       </Drawer>
       <Box sx={{ marginLeft: open ? '240px' : '60px', flexGrow: 1, p: 3, transition: 'margin-left 0.3s' }}>
