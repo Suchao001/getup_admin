@@ -9,7 +9,7 @@ function IsLogin({ page }) {
     useEffect(() => {
         if (loading) return; 
         if (!isLogin) {
-            navigate('/');
+            navigate('/login');
         }
     }, [isLogin, navigate, loading]);
 

@@ -1,81 +1,133 @@
 import React, { useState } from 'react';
-import { Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, Box, IconButton } from '@mui/material';
-import { Home, Settings, Person, People, Menu, CheckCircle, CalendarToday, Image } from '@mui/icons-material';
+import { Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, Box, IconButton, Tooltip, Divider } from '@mui/material';
+import { Home, Settings, People, Menu, CheckCircle, CalendarToday, ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { Link, useLocation } from 'react-router-dom';
+import { styled, useTheme } from '@mui/material/styles';
 
+const drawerWidth = 240;
 
-import { Link } from 'react-router-dom';
+const openedMixin = (theme) => ({
+  width: drawerWidth,
+  transition: theme.transitions.create('width', {
+    easing: theme.transitions.easing.sharp,
+    duration: theme.transitions.duration.enteringScreen,
+  }),
+  overflowX: 'hidden',
+});
 
-function Sidenav({ pageName, children}) {
+const closedMixin = (theme) => ({
+  transition: theme.transitions.create('width', {
+    easing: theme.transitions.easing.sharp,
+    duration: theme.transitions.duration.leavingScreen,
+  }),
+  overflowX: 'hidden',
+  width: `calc(${theme.spacing(7)} + 1px)`,
+  [theme.breakpoints.up('sm')]: {
+    width: `calc(${theme.spacing(8)} + 1px)`,
+  },
+});
+
+const StyledDrawer = styled(Drawer, { shouldForwardProp: (prop) => prop !== 'open' })(
+  ({ theme, open }) => ({
+    width: drawerWidth,
+    flexShrink: 0,
+    whiteSpace: 'nowrap',
+    boxSizing: 'border-box',
+    ...(open && {
+      ...openedMixin(theme),
+      '& .MuiDrawer-paper': openedMixin(theme),
+    }),
+    ...(!open && {
+      ...closedMixin(theme),
+      '& .MuiDrawer-paper': closedMixin(theme),
+    }),
+  }),
+);
+
+const DrawerHeader = styled('div')(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'flex-end',
+  padding: theme.spacing(0, 1),
+  ...theme.mixins.toolbar,
+}));
+
+const StyledListItem = styled(ListItem)(({ theme, active }) => ({
+  margin: theme.spacing(0.5, 1),
+  borderRadius: theme.shape.borderRadius,
+  backgroundColor: active ? theme.palette.action.selected : 'transparent',
+  '&:hover': {
+    backgroundColor: theme.palette.action.hover,
+    transform: 'translateX(4px)',
+  },
+  transition: theme.transitions.create(['background-color', 'transform'], {
+    duration: theme.transitions.duration.shorter,
+  }),
+}));
+
+const StyledListItemIcon = styled(ListItemIcon)(({ theme, open }) => ({
+  minWidth: 0,
+  marginRight: open ? theme.spacing(3) : 'auto',
+  justifyContent: 'center',
+}));
+
+function Sidenav({ pageName, children }) {
+  const theme = useTheme();
   const [open, setOpen] = useState(true);
-  
+  const location = useLocation();
+
   const menuItems = [
     { to: '/', icon: <Home />, text: 'Home' },
     { to: '/user', icon: <People />, text: 'User' },
     { to: '/manageIcon', icon: <CalendarToday />, text: 'Icon' },
     { to: '/manageHabit', icon: <CheckCircle />, text: 'Habit for Recommend' },
+    
   ];
-  
 
   const toggleDrawer = () => {
     setOpen(!open);
   };
 
-  const ListItemLink = ({ to, icon, text, selected }) => (
-    <ListItem 
-      button 
-      component={Link} 
-      to={to}
-      sx={{
-        backgroundColor: selected ? '#f0f0f0' : 'transparent',
-        '&:hover': {
-          backgroundColor: '#e0e0e0',
-        },
-      }}
-    >
-      <ListItemIcon>{icon}</ListItemIcon>
-      <ListItemText primary={text} />
-    </ListItem>
-  );
+  const ListItemLink = ({ to, icon, text }) => {
+    const active = location.pathname === to;
+    return (
+      <Tooltip title={!open ? text : ''} placement="right" arrow>
+        <StyledListItem
+          button
+          component={Link}
+          to={to}
+          active={active ? 1 : 0}
+        >
+          <StyledListItemIcon open={open}>
+            {React.cloneElement(icon, { color: active ? 'secondary' : 'inherit' })}
+          </StyledListItemIcon>
+          <ListItemText 
+            primary={text} 
+            sx={{ 
+              opacity: open ? 1 : 0,
+              color: active ? theme.palette.secondary.main : 'inherit',
+              fontWeight: active ? 'bold' : 'normal',
+            }} 
+          />
+        </StyledListItem>
+      </Tooltip>
+    );
+  };
 
   return (
-    <>
-      <IconButton
-        color="inherit"
-        aria-label="open drawer"
-        onClick={toggleDrawer}
-        edge="start"
-        sx={{
-          marginRight: 2,
-          ...(open && { display: 'none' }),
-        }}
-      >
-        <Menu />
-      </IconButton>
-      <Drawer
-        variant="permanent"
-        anchor="left"
-        open={open}
-        sx={{
-          width: open ? 240 : 60,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: open ? 240 : 60,
-            boxSizing: 'border-box',
-            overflowX: 'hidden',
-            transition: 'width 0.3s',
-          },
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', padding: 2 }}>
+    <Box sx={{ display: 'flex' }}>
+      <StyledDrawer variant="permanent" open={open}>
+        <DrawerHeader>
           {open && (
-            <Typography variant="h6" noWrap component="div">
+            <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, ml: 2 }}>
               Admin Panel
             </Typography>
           )}
           <IconButton onClick={toggleDrawer}>
-            <Menu />
+            {open ? <ChevronLeft /> : <ChevronRight />}
           </IconButton>
-        </Box>
+        </DrawerHeader>
+        <Divider />
         <List>
           {menuItems.map((menuItem) => (
             <ListItemLink 
@@ -83,15 +135,15 @@ function Sidenav({ pageName, children}) {
               to={menuItem.to}
               icon={menuItem.icon}
               text={menuItem.text}
-              selected={pageName?.toLowerCase() === menuItem.to.split('/').pop()}
             />
           ))}
         </List>
-      </Drawer>
-      <Box sx={{ marginLeft: open ? '240px' : '60px', flexGrow: 1, p: 3, transition: 'margin-left 0.3s' }}>
+      </StyledDrawer>
+      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+        <DrawerHeader />
         {children}
       </Box>
-    </>
+    </Box>
   );
 }
 
