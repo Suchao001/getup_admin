@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, ButtonGroup, TextField, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import { Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, ButtonGroup, TextField, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, Select, MenuItem } from '@mui/material';
 import { HostName } from '../util/HostName';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import * as ficons from '@fortawesome/free-solid-svg-icons';
 import ColorPicker from '../components/ColorPicker';
 import IconPicker from '../components/IconPicker';
+import { deleteConfirm } from '../util/sweet';
+import {ArrowBack} from '@mui/icons-material';
+import { styled } from '@mui/material/styles';
 
 function ManageHabit() {
   const [habitsCategory, setHabitsCategory] = useState([]);
@@ -14,8 +17,13 @@ function ManageHabit() {
   const [title, setTitle] = useState('Manage Habit');
   const [editCategory, setEditCategory] = useState(null);
   const [editHabit, setEditHabit] = useState(null);
-  const [icon, setIcon] = useState(null);
+  const [icon, setIcon] = useState('faUser');
   const [selectedIconId, setSelectedIconId] = useState(null); 
+  const [selectedHabit, setSelectedHabit] = useState(null);
+  const [isAddHabit, setIsAddHabit] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(1);
+  const [isAddCategory, setIsAddCategory] = useState(false);
+  
 
   const fetchHabitsCategory = async () => {
     try {
@@ -34,7 +42,6 @@ function ManageHabit() {
     try {
       const response = await axios.get(`${HostName}/api/admin/habit/${id}`);
       setHabits(response.data);
-   
     } catch (error) {
       console.error('Error fetching habits:', error);
     }
@@ -42,22 +49,51 @@ function ManageHabit() {
 
   const handleEditCategory = (category) => {
     setEditCategory(category);
+    setIsAddCategory(false);
   };
 
   const handleEditHabit = (habit) => {
     setEditHabit(habit);
+    console.log(habit);
     setSelectedIconId(habit.icon_id); 
     setIcon(habit.nameToUse);
+    setIsAddHabit(false);
   };
 
-  const handleDelete = (habitId) => {
-    console.log('Delete habit with ID:', habitId);
+  const handleDelete = async (habitId) => {
+    const confirm = await deleteConfirm('Are you sure you want to delete this habit?', 'Delete Habit');
+    try {
+      if (confirm) {
+      const response = await axios.delete(`${HostName}/api/admin/habit/habitRecommendation/${habitId}`);
+      console.log(response);
+      fetchHabitsCategory();
+      
+      }
+      return;
+    } catch (error) {
+      console.error('Error deleting habit:', error);
+    }
+  };
+  const handleDeleteCategory = async (categoryId) => {
+    const confirm = await deleteConfirm('Are you sure you want to delete this category?', 'Delete Category');
+    try {
+      if (confirm) {
+        const response = await axios.delete(`${HostName}/api/admin/habit/habitCategory/${categoryId}`);
+        console.log(response);
+        fetchHabitsCategory();
+      }
+      return;
+    } catch (error) {
+      console.error('Error deleting category:', error);
+    }
   };
 
   const handleSee = (habitId, habitName) => {
     fetchHabits(habitId);
     setTitle(habitName);
     setViewChange(true);
+    setSelectedHabit(habitId);
+    setSelectedCategoryId(habitId);
   };
 
   const handleBack = () => {
@@ -67,18 +103,25 @@ function ManageHabit() {
 
   const handleCloseEditCategory = () => {
     setEditCategory(null);
+    setIsAddCategory(false);
   };
 
   const handleCloseEditHabit = () => {
     setEditHabit(null);
-    setSelectedIconId(null); // Reset selectedIconId when closing edit habit dialog
+    setSelectedIconId(null);
+    setIsAddHabit(false);
   };
 
   const handleSaveCategory = async () => {
     try {
-      await axios.put(`${HostName}/api/admin/habit/category`, editCategory);
+      if (isAddCategory) {
+        await axios.post(`${HostName}/api/admin/habit/category`, editCategory);
+      } else {
+        await axios.put(`${HostName}/api/admin/habit/category`, editCategory);
+      }
       fetchHabitsCategory();
       setEditCategory(null);
+      setIsAddCategory(false);
     } catch (error) {
       console.error('Error saving category:', error);
     }
@@ -86,14 +129,33 @@ function ManageHabit() {
 
   const handleSaveHabit = async () => {
     try {
-      const data = {id: editHabit.id, name: editHabit.name, icon_id: selectedIconId};
-      await axios.put(`${HostName}/api/admin/habit/habitRecommendation`, data,{withCredentials: true});
-   
-      setEditHabit(null);
-      setSelectedIconId(null); 
+      
+      if (isAddHabit) {
+        const data = {name: editHabit.name, icon_id: selectedIconId, categoryId: selectedCategoryId };
+        const response = await axios.post(`${HostName}/api/admin/habit/habitRecommendation`, data, { withCredentials: true });
+        console.log(response);
+        fetchHabitsCategory();
+      } else {
+        const data = { id: editHabit.id, name: editHabit.name, icon_id: selectedIconId };
+        await axios.put(`${HostName}/api/admin/habit/habitRecommendation`, data, { withCredentials: true });
+        fetchHabits(selectedHabit);
+      }
+      handleCloseEditHabit();
     } catch (error) {
       console.error('Error saving habit:', error);
     }
+  };
+
+  const handleAddHabit = () => {
+    setEditHabit({ id: null, name: '', icon_id: 3 });
+    setSelectedIconId(3);
+    setIcon('faUser');
+    setIsAddHabit(true);
+  };
+
+  const handleAddCategory = () => {
+    setEditCategory({ id: null, name: '', color: '#000000' });
+    setIsAddCategory(true);
   };
 
   const onSelectIcon = (icon) => {
@@ -105,17 +167,31 @@ function ManageHabit() {
     setEditHabit({ ...editHabit, icon_id: id });
   };
 
+  const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
+    marginTop: theme.spacing(3),
+    boxShadow: theme.shadows[5],
+    borderRadius: theme.shape.borderRadius,
+  }));
+
   return (
     <div>
-      <h1>{title}</h1>
-      <TableContainer component={Paper}>
+      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+        <Typography variant="h4" className='font1'>{title}</Typography>
+        <div>
+         { viewChange ? <Button onClick={handleBack} style={{marginRight: '10px'}}><ArrowBack/>Back</Button> : null}
+          <Button variant="contained" color="primary" onClick={handleAddHabit} style={{marginRight: '10px'}}>Add Habit</Button>
+          <Button variant="contained" color="secondary" onClick={handleAddCategory}>Add Category</Button>
+        </div>
+      </div>
+     
+        <StyledTableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
               <TableCell>Name</TableCell>
-              <TableCell>{viewChange ? 'Icon' : 'Name'}</TableCell>
-              <TableCell>{viewChange ? 'Action' : 'Color'}</TableCell>
-              <TableCell>{viewChange ? 'Back' : 'See'}</TableCell>
+              <TableCell>{viewChange ? 'Icon' : 'Color'}</TableCell>
+              <TableCell>Action</TableCell>
+              {!viewChange && <TableCell>See</TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -129,9 +205,7 @@ function ManageHabit() {
                     <Button variant="contained" sx={{ backgroundColor: '#D50000', color: 'white', '&:hover': { backgroundColor: '#a20000' } }} onClick={() => handleDelete(habit.id)}>Delete</Button>
                   </ButtonGroup>
                 </TableCell>
-                <TableCell>
-                  <Button variant="contained" sx={{ backgroundColor: '#333', color: 'white', '&:hover': { backgroundColor: '#333' } }} onClick={handleBack}>Back</Button>
-                </TableCell>
+               
               </TableRow>
             )) : Array.isArray(habitsCategory) && habitsCategory.map((category) => (
               <TableRow key={category.id}>
@@ -140,7 +214,7 @@ function ManageHabit() {
                 <TableCell>
                   <ButtonGroup>
                     <Button variant="contained" sx={{ backgroundColor: '#fbb900', color: 'white', '&:hover': { backgroundColor: '#c79300' } }} onClick={() => handleEditCategory(category)}>Edit</Button>
-                    <Button variant="contained" sx={{ backgroundColor: '#D50000', color: 'white', '&:hover': { backgroundColor: '#a20000' } }} onClick={() => handleDelete(category.id)}>Delete</Button>
+                    <Button variant="contained" sx={{ backgroundColor: '#D50000', color: 'white', '&:hover': { backgroundColor: '#a20000' } }} onClick={() => handleDeleteCategory(category.id)}>Delete</Button>
                   </ButtonGroup>
                 </TableCell>
                 <TableCell>
@@ -150,7 +224,7 @@ function ManageHabit() {
             ))}
           </TableBody>
         </Table>
-      </TableContainer>
+      </StyledTableContainer>
 
       {/* Edit Category Dialog */}
       {editCategory && (
@@ -159,7 +233,7 @@ function ManageHabit() {
             overflow: 'visible',
           },
         }}>
-          <DialogTitle>Edit Category</DialogTitle>
+          <DialogTitle>{isAddCategory ? 'Add Category' : 'Edit Category'}</DialogTitle>
           <DialogContent>
             <TextField
               autoFocus
@@ -185,10 +259,10 @@ function ManageHabit() {
         </Dialog>
       )}
 
-      {/* Edit Habit Dialog */}
+      {/* Edit/Add Habit Dialog */}
       {editHabit && (
         <Dialog open={true} onClose={handleCloseEditHabit} >
-          <DialogTitle>Edit Habit</DialogTitle>
+          <DialogTitle>{isAddHabit ? 'Add Habit' : 'Edit Habit'}</DialogTitle>
           <DialogContent>
             <TextField
               autoFocus
@@ -200,16 +274,36 @@ function ManageHabit() {
               value={editHabit.name}
               onChange={(e) => setEditHabit({ ...editHabit, name: e.target.value })}
             />
-            <div style={{ marginTop: '20px' }}>
-              <IconPicker
+            <div style={{ marginTop: '20px' ,display:'flex',gap:'10px'}}>
+            <FontAwesomeIcon icon={ficons[icon]} size="2x" />
+           <IconPicker
                 icon={selectedIconId}
                 onSelectIcon={(icon) => onSelectIcon(icon)}
                 onSelectIconId={(id) => onSelectIconId(id)}
               />
             </div>
-            <div style={{ marginTop: '20px' }}>
-              <FontAwesomeIcon icon={ficons[icon]} size="2x" />
-            </div>
+          
+            {isAddHabit && (
+              <div style={{ marginTop: '20px' }}>
+                <Typography variant="body1">Select Category:</Typography>
+                <FormControl fullWidth>
+                  <Select
+                    value={selectedCategoryId || editHabit.categoryId || habitsCategory[0]?.id || ''}
+                    onChange={(e) => {
+                      const newCategoryId = e.target.value;
+                      setEditHabit({ ...editHabit, categoryId: newCategoryId });
+                      setSelectedCategoryId(newCategoryId);
+                    }}
+                  >
+                    {habitsCategory.map((category) => (
+                      <MenuItem key={category.id} value={category.id}>
+                        {category.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </div>
+            )}
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseEditHabit}>Cancel</Button>

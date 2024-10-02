@@ -28,7 +28,19 @@ const countUsers = async (req, res) => {
   }
 };
 
+const deleteUser = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    await knex('users').where('user_id', user_id).del();
+    res.json({ ok: true, message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ ok: false, message: 'Internal server error' });
+  }
+};
+
 router.get('/', authenticateToken, getUsers);
 router.get('/count', authenticateToken, countUsers);
+router.delete('/:user_id', authenticateToken, deleteUser);
 
 export default router;

@@ -2,25 +2,10 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { HostName } from '../util/HostName';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Avatar,
-  Typography,
-  Box,
-  TextField,
-  InputAdornment,
-  IconButton,
-  Tooltip,
-  CircularProgress,
-  Snackbar,
-  Alert,
+  Button,Table,TableBody,TableCell,TableContainer,TableHead,TableRow,Paper,Avatar,Typography,Box,TextField,InputAdornment,IconButton,Tooltip,CircularProgress,Snackbar,Alert
 } from '@mui/material';
-import { Search, Refresh } from '@mui/icons-material';
+import { Search, Refresh, Delete } from '@mui/icons-material';
+import { goodAlert, badAlert,deleteConfirm } from '../util/sweet';
 
 function User() {
   const [users, setUsers] = useState([]);
@@ -66,6 +51,24 @@ function User() {
     fetchUsers();
   };
 
+  const handleDelete = async (user_id) => {
+    const confirm = deleteConfirm('Are you sure you want to delete this user?');
+   
+    try {
+      if(confirm){
+      const response = await axios.delete(`${HostName}/api/admin/user/${user_id}`, { withCredentials: true });
+      if (response.data.ok) {
+        goodAlert('User deleted successfully');
+        fetchUsers();
+      }
+    }
+    return;
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      setError('Failed to delete user. Please try again.');
+    }
+  };
+
   return (
     <Box sx={{ width: '100%', mb: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -104,6 +107,7 @@ function User() {
               <TableCell>Username</TableCell>
               <TableCell>Profile Picture</TableCell>
               <TableCell>Profile Picture URL</TableCell>
+              <TableCell>Delete</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -120,7 +124,7 @@ function User() {
                   <TableCell>{user.username}</TableCell>
                   <TableCell>
                     <Avatar
-                      src={`${HostName}/image/${user.profile_picture}`}
+                      src={`./../../../../public/image/${user.profile_picture}`}
                       alt={user.username}
                       sx={{ width: 40, height: 40 }}
                     >
@@ -128,6 +132,11 @@ function User() {
                     </Avatar>
                   </TableCell>
                   <TableCell>{user.profile_picture}</TableCell>
+                  <TableCell>
+                    <Button variant="contained" color="error" onClick={() => handleDelete(user.user_id)}>
+                      <Delete />  
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
