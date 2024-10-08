@@ -7,7 +7,7 @@ const HostName = 'http://localhost:3000';
 
 const getUsers = async (req, res) => {
   try {
-    const users = await knex('users').select('user_id', 'username', 'profile_picture');
+    const users = await knex('users').select('user_id', 'username', 'profile_picture', 'is_active');
     res.json({ ok: true, users: users.map(user => ({
       ...user,
       profile_picture_url: `${HostName}/image/${user.profile_picture}`,
@@ -28,19 +28,23 @@ const countUsers = async (req, res) => {
   }
 };
 
-const deleteUser = async (req, res) => {
+const toggleUserStatus = async (req, res) => {
   try {
     const { user_id } = req.params;
-    await knex('users').where('user_id', user_id).del();
-    res.json({ ok: true, message: 'User deleted successfully' });
+    const user = await knex('users').where('user_id', user_id).first();
+    if (!user) {
+      return res.status(404).json({ ok: false, message: 'User not found' });
+    }
+    const updatedUser = await knex('users').where('user_id', user_id).update({ is_active: !user.is_active });
+    res.json({ ok: true, message: 'User status updated successfully', user: updatedUser });
   } catch (error) {
-    console.error('Error deleting user:', error);
+    console.error('Error deactivating user:', error);
     res.status(500).json({ ok: false, message: 'Internal server error' });
   }
 };
 
 router.get('/', authenticateToken, getUsers);
 router.get('/count', authenticateToken, countUsers);
-router.delete('/:user_id', authenticateToken, deleteUser);
+router.put('/:user_id', authenticateToken, toggleUserStatus);
 
 export default router;

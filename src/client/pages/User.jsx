@@ -1,16 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { HostName } from '../util/HostName';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { HostName } from "../util/HostName";
 import {
-  Button,Table,TableBody,TableCell,TableContainer,TableHead,TableRow,Paper,Avatar,Typography,Box,TextField,InputAdornment,IconButton,Tooltip,CircularProgress,Snackbar,Alert
-} from '@mui/material';
-import { Search, Refresh, Delete } from '@mui/icons-material';
-import { goodAlert, badAlert,deleteConfirm } from '../util/sweet';
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Avatar,
+  Typography,
+  Box,
+  TextField,
+  InputAdornment,
+  IconButton,
+  Tooltip,
+  CircularProgress,
+  Snackbar,
+  Alert,
+} from "@mui/material";
+import { Search, Refresh } from "@mui/icons-material";
+import { goodAlert, badAlert, deleteConfirm } from "../util/sweet";
 
 function User() {
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -18,14 +35,16 @@ function User() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`${HostName}/api/admin/user`, { withCredentials: true });
+      const response = await axios.get(`${HostName}/api/admin/user`, {
+        withCredentials: true,
+      });
       if (response.data.ok) {
         setUsers(response.data.users);
         setFilteredUsers(response.data.users);
       }
     } catch (error) {
-      console.error('Error fetching users:', error);
-      setError('Failed to fetch users. Please try again.');
+      console.error("Error fetching users:", error);
+      setError("Failed to fetch users. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -36,9 +55,10 @@ function User() {
   }, []);
 
   useEffect(() => {
-    const filtered = users.filter(user =>
-      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.user_id.toString().includes(searchTerm)
+    const filtered = users.filter(
+      (user) =>
+        user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.user_id.toString().includes(searchTerm)
     );
     setFilteredUsers(filtered);
   }, [searchTerm, users]);
@@ -51,31 +71,37 @@ function User() {
     fetchUsers();
   };
 
-  const handleDelete = async (user_id) => {
-    const confirm = deleteConfirm('Are you sure you want to delete this user?');
-   
+  const toggleUserStatus = async (user_id) => {
     try {
-      if(confirm){
-      const response = await axios.delete(`${HostName}/api/admin/user/${user_id}`, { withCredentials: true });
+      const response = await axios.put(
+        `${HostName}/api/admin/user/${user_id}`,
+        {},
+        { withCredentials: true }
+      );
       if (response.data.ok) {
-        goodAlert('User deleted successfully');
+        goodAlert("User status toggled successfully");
         fetchUsers();
       }
-    }
-    return;
     } catch (error) {
-      console.error('Error deleting user:', error);
-      setError('Failed to delete user. Please try again.');
+      console.error("Error toggling user status:", error);
+      setError("Failed to toggle user status. Please try again.");
     }
   };
 
   return (
-    <Box sx={{ width: '100%', mb: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+    <Box sx={{ width: "100%", mb: 2 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
         <Typography variant="h4" component="div">
           User Management
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ display: "flex", alignItems: "center" }}>
           <TextField
             variant="outlined"
             size="small"
@@ -98,7 +124,7 @@ function User() {
           </Tooltip>
         </Box>
       </Box>
-      
+
       <TableContainer component={Paper} elevation={3}>
         <Table sx={{ minWidth: 650 }} aria-label="user table">
           <TableHead>
@@ -107,13 +133,14 @@ function User() {
               <TableCell>Username</TableCell>
               <TableCell>Profile Picture</TableCell>
               <TableCell>Profile Picture URL</TableCell>
-              <TableCell>Delete</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Toggle Status</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={4} align="center">
+                <TableCell colSpan={5} align="center">
                   <CircularProgress />
                 </TableCell>
               </TableRow>
@@ -133,15 +160,22 @@ function User() {
                   </TableCell>
                   <TableCell>{user.profile_picture}</TableCell>
                   <TableCell>
-                    <Button variant="contained" color="error" onClick={() => handleDelete(user.user_id)}>
-                      <Delete />  
+                    {user.is_active ? "Active" : "Inactive"}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="contained"
+                      color="error"
+                      onClick={() => toggleUserStatus(user.user_id)}
+                    >
+                      Toggle Status
                     </Button>
                   </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} align="center">
+                <TableCell colSpan={5} align="center">
                   No users found
                 </TableCell>
               </TableRow>
@@ -149,9 +183,17 @@ function User() {
           </TableBody>
         </Table>
       </TableContainer>
-      
-      <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError(null)}>
-        <Alert onClose={() => setError(null)} severity="error" sx={{ width: '100%' }}>
+
+      <Snackbar
+        open={!!error}
+        autoHideDuration={6000}
+        onClose={() => setError(null)}
+      >
+        <Alert
+          onClose={() => setError(null)}
+          severity="error"
+          sx={{ width: "100%" }}
+        >
           {error}
         </Alert>
       </Snackbar>
