@@ -1,6 +1,6 @@
 import express from 'express';
 import knex from '../config.js';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import authenticateToken from '../middleware/authenticateToken.js';
